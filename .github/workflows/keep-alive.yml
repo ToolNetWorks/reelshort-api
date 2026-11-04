@@ -1,0 +1,39 @@
+name: Keep Render Awake
+
+on:
+  schedule:
+    - cron: '*/13 * * * *'  # Every 13 minutes (prevents free tier sleep)
+  workflow_dispatch:        # Manual trigger from Actions tab
+
+jobs:
+  ping:
+    name: Ping Health Endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping /health
+        id: ping
+        run: |
+          set -euo pipefail
+          RESPONSE=$(curl -fsS -w "\n%{http_code}\n%{time_total}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_API }}" \
+            "https://reelshort-api.onrender.com/health" 2>/dev/null || true)
+          BODY=$(echo "$RESPONSE" | head -n -2)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n 2 | head -n 1)
+          DURATION=$(echo "$RESPONSE" | tail -n 1)
+          
+          echo "HTTP $HTTP_CODE - ${DURATION}s"
+          echo "Body: $BODY"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Health check failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+      - name: Log success
+        if: success()
+        run: echo "✅ Keep-alive ping successful at $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+      - name: Alert on failure
+        if: failure()
+        run: |
+          echo "❌ Keep-alive ping FAILED at $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo "Check Render logs: https://dashboard.render.com/web/reelshort-api/logs"
