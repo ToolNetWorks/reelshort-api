@@ -1,0 +1,87 @@
+# Render Blueprint - ToolNet ReelShort Metadata API
+# Deploy: Push to GitHub → Render Dashboard → New → Blueprint → Select this repo
+services:
+  - type: web
+    name: reelshort-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore  # hoặc oregon, frankfurt - chọn gần user nhất
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # --- Required: Set these in Render Dashboard (Settings → Environment) ---
+      - key: ADMIN_PASSWORD
+        sync: false
+        # Generate: openssl rand -base64 32
+      - key: TURSO_DATABASE_URL
+        sync: false
+        # Format: libsql://your-db-xyz.turso.io (from: turso db create reelshort-api)
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+        # From: turso db tokens create your-db-xyz
+      - key: PUBLIC_API_KEYS
+        sync: false
+        # Comma-separated API keys for public access, e.g.: "sk_live_abc123,sk_live_def456"
+
+      # --- Optional: Override defaults if needed ---
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: "8077"
+      - key: SOURCE_BASE_URL
+        value: https://www.reelshort.com
+      - key: WORKER_CONCURRENCY
+        value: "1"
+      - key: SOURCE_CONCURRENCY
+        value: "1"
+      - key: SOURCE_REQUESTS_PER_MINUTE
+        value: "10"
+      - key: PUBLIC_AUTH_ENABLED
+        value: "true"
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_AUTH_ENABLED
+        value: "true"
+      - key: DOCS_ENABLED
+        value: "true"
+      - key: LOG_FILE
+        value: ""  # Render captures stdout, disable file logging
+      - key: DATA_DIR
+        value: /tmp/data
+      - key: DB_PATH
+        value: /tmp/data/reelshort.sqlite3  # Fallback if Turso not set (ephemeral!)
+      - key: BACKUP_DIR
+        value: /tmp/data/backups
+      - key: SCHEDULER_ENABLED
+        value: "false"  # Free tier sleeps → disable internal scheduler
+      - key: AUTO_SYNC_ENABLED
+        value: "false"
+      - key: RESPECT_ROBOTS_TXT
+        value: "true"
+
+# Optional: Add a cron job service for scheduled crawls (paid plan required)
+# jobs:
+#   - type: cron
+#     name: reelshort-catalog-sync
+#     runtime: docker
+#     dockerfilePath: ./Dockerfile
+#     schedule: "0 */6 * * *"  # Every 6 hours
+#     envVars:
+#       - key: TURSO_DATABASE_URL
+#         sync: false
+#       - key: TURSO_AUTH_TOKEN
+#         sync: false
+#       - key: SOURCE_BASE_URL
+#         value: https://www.reelshort.com
+#     startCommand: |
+#       python -c "
+# import asyncio, httpx, os
+# async def main():
+#     async with httpx.AsyncClient(timeout=30.0) as client:
+#         resp = await client.post(f'http://reelshort-api:8077/admin/crawl',
+#             json={'kind': 'locale_catalog', 'payload': {'lang': 'en', 'force': False}},
+#             auth=('admin', os.getenv('ADMIN_PASSWORD')))
+#         print(resp.status_code, resp.text)
+# asyncio.run(main())
+# "

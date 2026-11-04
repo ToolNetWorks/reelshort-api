@@ -1,0 +1,25 @@
+# Build context hygiene — keeps the image small and secrets out of it.
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.env
+.env.*
+!.env.example
+data
+logs
+backups
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+tests
+docs
+*.md
+!README.md
+docker-compose.yml
+Makefile

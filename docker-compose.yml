@@ -1,0 +1,57 @@
+# ToolNet ReelShort Metadata API — production compose (localhost-bound).
+#
+# Bind address is intentionally 127.0.0.1: expose this service through the
+# existing nginx / cloudflared tunnel, exactly like the other ToolNet services.
+name: toolnet-reelshort-api
+
+services:
+  reelshort-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: toolnet/reelshort-api:1.0.0
+    container_name: toolnet-reelshort-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      ENVIRONMENT: production
+      DB_PATH: /srv/data/reelshort.sqlite3
+      DATA_DIR: /srv/data
+      BACKUP_DIR: /srv/data/backups
+      LOG_FILE: /srv/logs/reelshort-api.log
+    ports:
+      - "127.0.0.1:8077:8077"
+    volumes:
+      - ./data:/srv/data
+      - ./logs:/srv/logs
+    # Metadata-only crawler: keep it lightweight and non-disruptive.
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8077/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - default
+      - toolnet-internal
+
+networks:
+  default:
+  toolnet-internal:
+    name: toolnet-internal
+    external: true

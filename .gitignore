@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project data (generated at runtime)
+data/*.sqlite3
+data/*.sqlite3-*
+data/backups/*.gz
+logs/*.log
+
+# Environment secrets (NEVER commit)
+.env
+.env.local
+.env.production
+
+# Docker
+.docker/
+
+# Render
+render.yaml.bak
+
+# Test fixtures (optional - they're committed but can be regenerated)
+# tests/fixtures/*.json
