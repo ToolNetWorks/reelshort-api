@@ -44,6 +44,7 @@ REELSHORT_CATALOG_PAGE_URLS: dict[str, str] = {
     "ko": "https://www.reelshort.com/ko/movie-genres/all-movies/{page}",
     "zh-TW": "https://www.reelshort.com/zh-TW/movie-genres/all-movies/{page}",
     "zh-tw": "https://www.reelshort.com/zh-TW/movie-genres/all-movies/{page}",
+    "zh": "https://www.reelshort.com/zh-TW/movie-genres/all-movies/{page}",
     "fr": "https://www.reelshort.com/fr/movie-genres/all-movies/{page}",
 }
 
@@ -69,7 +70,11 @@ def get_locale_catalog_page_url(
             return url.replace("https://www.reelshort.com", base_url.rstrip("/"))
     if clean == "en":
         return f"{base_url.rstrip('/')}/movie-genres/all-movies/{page_num}"
-    locale_segment = "zh-TW" if clean == "zh-tw" else clean
+    # zh, zh-CN, zh-HK, zh-SG all map to zh-TW catalog
+    if clean.startswith("zh"):
+        locale_segment = "zh-TW"
+    else:
+        locale_segment = clean
     return f"{base_url.rstrip('/')}/{locale_segment}/movie-genres/all-movies/{page_num}"
 
 
